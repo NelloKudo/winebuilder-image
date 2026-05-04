@@ -108,11 +108,10 @@ RUN wget -O libxkbcommon.tar.gz https://github.com/xkbcommon/libxkbcommon/archiv
     CFLAGS="-static-libgcc" CXXFLAGS="-static-libgcc -static-libstdc++" LDFLAGS="-static-libgcc -static-libstdc++" meson setup --prefer-static \
         --prefix=/usr/local/x86_64 --libdir=/usr/local/x86_64/lib/x86_64-linux-gnu \
         --native-file /opt/build64-conf.txt --buildtype "release" \
-        build_x86_64 -Denable-docs=false -Ddefault_library=static -Denable-tools=false \ 
+        build_x86_64 -Denable-docs=false -Ddefault_library=both -Denable-tools=false \
         -Denable-bash-completion=false -Denable-x11=false -Denable-wayland=false -Denable-xkbregistry=true && \
-    meson compile -C build_x86_64 xkbcommon:static_library && \
-    meson compile -C build_x86_64 xkbregistry:static_library && \
-    meson install -C build_x86_64 --no-rebuild --tags devel && \
+    meson compile -C build_x86_64 xkbcommon:static_library xkbcommon:shared_library xkbregistry:static_library xkbregistry:shared_library && \
+    meson install -C build_x86_64 --no-rebuild --tags devel,runtime && \
     rm -rf build_x86_64 && \
     # 32-bit
     echo "[binaries]\nc = 'gcc'\ncpp = 'g++'\n\n[host_machine]\nsystem = 'linux'\ncpu_family = 'x86'\ncpu = 'x86'\nendian = 'little'" > /opt/build32-conf.txt && \
@@ -121,11 +120,10 @@ RUN wget -O libxkbcommon.tar.gz https://github.com/xkbcommon/libxkbcommon/archiv
     CFLAGS="-m32 -static-libgcc" CXXFLAGS="-m32 -static-libgcc -static-libstdc++" LDFLAGS="-m32 -static-libgcc -static-libstdc++" meson setup --prefer-static \
         --prefix=/usr/local/i386 --libdir=/usr/local/i386/lib/i386-linux-gnu \
         --native-file /opt/build32-conf.txt --buildtype "release" \
-        build_i386 -Denable-docs=false -Ddefault_library=static -Denable-tools=false \ 
+        build_i386 -Denable-docs=false -Ddefault_library=both -Denable-tools=false \
         -Denable-bash-completion=false -Denable-x11=false -Denable-wayland=false -Denable-xkbregistry=true && \
-    meson compile -C "build_i386" xkbcommon:static_library && \
-    meson compile -C "build_i386" xkbregistry:static_library && \
-    meson install -C "build_i386" --no-rebuild --tags devel
+    meson compile -C build_i386 xkbcommon:static_library xkbcommon:shared_library xkbregistry:static_library xkbregistry:shared_library && \
+    meson install -C build_i386 --no-rebuild --tags devel,runtime
 
 RUN wget -O gstreamer.tar.gz https://github.com/GStreamer/gstreamer/archive/refs/tags/${GSTREAMER_VERSION}.tar.gz && \
     tar -xf gstreamer.tar.gz && \

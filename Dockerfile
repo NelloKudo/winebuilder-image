@@ -13,6 +13,7 @@ ENV FFMPEG_VERSION="7.1.1" \
     LIBXKBCOMMON_VERSION="1.13.1" \
     LIBXML2_VERSION="2.15.2" \
     GSTREAMER_VERSION="1.26.5" \
+    PIPEWIRE_VERSION="1.4.2" \
     LLVM_MINGW_VERSION="20250402" \
     XZ_VERSION="5.8.3" \
     LIBUNWIND_VERSION="1.8.3" \
@@ -176,6 +177,43 @@ RUN wget -O gstreamer.tar.gz https://github.com/GStreamer/gstreamer/archive/refs
     ninja -C build_i386 && \
     ninja -C build_i386 install && \
     rm -rf build_i386
+
+RUN wget -O pipewire.tar.gz https://github.com/PipeWire/pipewire/archive/refs/tags/${PIPEWIRE_VERSION}.tar.gz && \
+    tar -xf pipewire.tar.gz && \
+    cd pipewire-${PIPEWIRE_VERSION} && \
+    export LIBRARY_PATH="usr/lib:/usr/lib/x86_64-linux-gnu:/usr/local/lib:/usr/local/lib/x86_64-linux-gnu:/usr/local/i386/lib/i386-linux-gnu:/usr/local/lib/i386-linux-gnu:/usr/lib/i386-linux-gnu:${LIBRARY_PATH:-}" && \
+    export LD_LIBRARY_PATH="usr/lib:/usr/lib/x86_64-linux-gnu:/usr/local/lib:/usr/local/lib/x86_64-linux-gnu:/usr/local/i386/lib/i386-linux-gnu:/usr/local/lib/i386-linux-gnu:/usr/lib/i386-linux-gnu:${LD_LIBRARY_PATH:-}" && \
+    # 64-bit build
+    echo "[binaries]\nc = 'gcc'\ncpp = 'g++'\n\n[host_machine]\nsystem = 'linux'\ncpu_family = 'x86_64'\ncpu = 'x86_64'\nendian = 'little'" > /opt/build64-conf.txt && \
+    export PKG_CONFIG_LIBDIR="/usr/local/x86_64/lib/x86_64-linux-gnu/pkgconfig:/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/lib/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/lib/x86_64-linux-gnu/pkgconfig:/usr/share/pkgconfig" && \
+    export PKG_CONFIG_PATH="${PKG_CONFIG_LIBDIR}" && \
+    meson setup build_x86_64 \
+        --prefix=/usr/local/x86_64 \
+        --libdir=/usr/local/x86_64/lib/x86_64-linux-gnu \
+        --native-file /opt/build64-conf.txt --buildtype release \
+        -Davahi=disabled -Ddocs=disabled -Dexamples=disabled -Djack=disabled \
+        -Dman=disabled -Dpw-cat=disabled -Draop=disabled -Dsession-managers=[] \
+        -Dsnap=disabled -Dsystemd-user-service=disabled -Dtests=disabled -Dudev=disabled \
+        -Decho-cancel-webrtc=disabled && \
+    ninja -C build_x86_64 && \
+    ninja -C build_x86_64 install && \
+    rm -rf build_x86_64 && \
+    # 32-bit build
+    echo "[binaries]\nc = 'gcc'\ncpp = 'g++'\n\n[properties]\nc_args = ['-m32', '-msse2', '-mfpmath=sse']\ncpp_args = ['-m32', '-msse2', '-mfpmath=sse']\nc_link_args = ['-m32']\ncpp_link_args = ['-m32']\n\n[host_machine]\nsystem = 'linux'\ncpu_family = 'x86'\ncpu = 'i686'\nendian = 'little'" > /opt/build32-conf.txt && \
+    export PKG_CONFIG_LIBDIR="/usr/local/i386/lib/i386-linux-gnu/pkgconfig:/usr/lib/i386-linux-gnu/pkgconfig:/usr/lib/pkgconfig:/usr/local/lib/pkgconfig:/usr/share/pkgconfig" && \
+    export PKG_CONFIG_PATH="${PKG_CONFIG_LIBDIR}" && \
+    meson setup build_i386 \
+        --prefix=/usr/local/i386 \
+        --libdir=/usr/local/i386/lib/i386-linux-gnu \
+        --native-file /opt/build32-conf.txt --buildtype release \
+        -Davahi=disabled -Ddocs=disabled -Dexamples=disabled -Djack=disabled \
+        -Dman=disabled -Dpw-cat=disabled -Draop=disabled -Dsession-managers=[] \
+        -Dsnap=disabled -Dsystemd-user-service=disabled -Dtests=disabled -Dudev=disabled \
+        -Decho-cancel-webrtc=disabled -Dudevrulesdir=/usr/local/i386/lib/udev/rules.d && \
+    ninja -C build_i386 && \
+    ninja -C build_i386 install && \
+    rm -rf build_i386 && \
+    rm -rf /usr/local/x86_64/lib/udev /usr/local/i386/lib/udev
 
 RUN wget -O ffmpeg.tar.xz https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.xz && \
     tar -xf ffmpeg.tar.xz && \

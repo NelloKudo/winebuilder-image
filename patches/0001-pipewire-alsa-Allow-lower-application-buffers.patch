@@ -1,0 +1,28 @@
+From 81e7f079d66ac1dc9fdb3cacc39f1cab634896cd Mon Sep 17 00:00:00 2001
+From: NelloKudo <marshnelloosu@gmail.com>
+Date: Mon, 7 Sep 2026 20:17:24 +0200
+Subject: [PATCH] pipewire-alsa: Allow lower application buffers.
+
+---
+ pipewire-alsa/alsa-plugins/pcm_pipewire.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/pipewire-alsa/alsa-plugins/pcm_pipewire.c b/pipewire-alsa/alsa-plugins/pcm_pipewire.c
+index dc0cd81..c3b02f4 100644
+--- a/pipewire-alsa/alsa-plugins/pcm_pipewire.c
++++ b/pipewire-alsa/alsa-plugins/pcm_pipewire.c
+@@ -62,9 +62,9 @@ PW_LOG_TOPIC_STATIC(alsa_log_topic, "alsa.pcm");
+ #define MAX_CHANNELS	64
+ #define MAX_RATE	(48000*8)
+ 
+-#define MIN_PERIOD	64
++#define MIN_PERIOD	8
+ 
+-#define MIN_PERIOD_BYTES	(128)
++#define MIN_PERIOD_BYTES	(64)
+ #define MAX_PERIOD_BYTES	(2*1024*1024)
+ 
+ #define MIN_BUFFER_BYTES	(2*MIN_PERIOD_BYTES)
+-- 
+2.55.0
+

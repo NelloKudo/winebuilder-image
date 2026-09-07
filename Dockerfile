@@ -225,6 +225,8 @@ RUN wget -O pipewire.tar.gz https://github.com/PipeWire/pipewire/archive/refs/ta
 RUN wget -O pipewire-alsa.tar.gz https://github.com/PipeWire/pipewire/archive/refs/tags/${PIPEWIRE_ALSA_VERSION}.tar.gz && \
     tar -xf pipewire-alsa.tar.gz && \
     cd pipewire-${PIPEWIRE_ALSA_VERSION} && \
+    wget -O pw-alsa.patch https://raw.githubusercontent.com/NelloKudo/winebuilder-image/957f49e10f5bbb3f5f59b165c1eaab0c2dc720f9/patches/0001-pipewire-alsa-Allow-lower-application-buffers.patch && \
+    patch -Np1 -i pw-alsa.patch && \
     mkdir -p /usr/local/x86_64/lib/x86_64-linux-gnu/alsa-lib /usr/local/i386/lib/i386-linux-gnu/alsa-lib && \
     export PKG_CONFIG_LIBDIR="/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/lib/pkgconfig:/usr/share/pkgconfig" && \
     for m in pcm ctl; do \

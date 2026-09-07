@@ -14,6 +14,7 @@ ENV FFMPEG_VERSION="7.1.1" \
     LIBXML2_VERSION="2.15.2" \
     GSTREAMER_VERSION="1.26.5" \
     PIPEWIRE_VERSION="1.4.2" \
+    PIPEWIRE_ALSA_VERSION="0.3.65" \
     LLVM_MINGW_VERSION="20250402" \
     XZ_VERSION="5.8.3" \
     LIBUNWIND_VERSION="1.8.3" \
@@ -33,6 +34,11 @@ RUN wget -O llvm-mingw-${LLVM_MINGW_VERSION}.tar.xz \
     mv /usr/local/llvm-mingw-${LLVM_MINGW_VERSION}-msvcrt-ubuntu-20.04-x86_64 /usr/local/llvm-mingw
 
 WORKDIR /build
+
+# rip bullseye LTS, use a frozen snapshot instead
+RUN sed -i '/security.debian.org/d' /etc/apt/sources.list /etc/apt/sources.list.d/*.list 2>/dev/null || true && \
+    echo 'deb [check-valid-until=no] http://snapshot.debian.org/archive/debian-security/20260825T000000Z bullseye-security main contrib non-free' \
+        > /etc/apt/sources.list.d/bullseye-security-snapshot.list
 
 RUN apt-get -y update && \
     apt-get -y install python3-pip libfaad-dev libfaad-dev:i386 \
@@ -214,6 +220,27 @@ RUN wget -O pipewire.tar.gz https://github.com/PipeWire/pipewire/archive/refs/ta
     ninja -C build_i386 install && \
     rm -rf build_i386 && \
     rm -rf /usr/local/x86_64/lib/udev /usr/local/i386/lib/udev
+
+# alsa plugin pinned to the runtime's libpipewire
+RUN wget -O pipewire-alsa.tar.gz https://github.com/PipeWire/pipewire/archive/refs/tags/${PIPEWIRE_ALSA_VERSION}.tar.gz && \
+    tar -xf pipewire-alsa.tar.gz && \
+    cd pipewire-${PIPEWIRE_ALSA_VERSION} && \
+    mkdir -p /usr/local/x86_64/lib/x86_64-linux-gnu/alsa-lib /usr/local/i386/lib/i386-linux-gnu/alsa-lib && \
+    export PKG_CONFIG_LIBDIR="/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/lib/pkgconfig:/usr/share/pkgconfig" && \
+    for m in pcm ctl; do \
+        gcc -shared -fPIC -DPIC -O2 -D_GNU_SOURCE \
+            -o /usr/local/x86_64/lib/x86_64-linux-gnu/alsa-lib/libasound_module_${m}_pipewire.so \
+            pipewire-alsa/alsa-plugins/${m}_pipewire.c \
+            $(pkg-config --cflags --libs libpipewire-0.3 alsa) || exit 1; \
+    done && \
+    export PKG_CONFIG_LIBDIR="/usr/lib/i386-linux-gnu/pkgconfig:/usr/share/pkgconfig" && \
+    for m in pcm ctl; do \
+        gcc -m32 -shared -fPIC -DPIC -O2 -D_GNU_SOURCE \
+            -o /usr/local/i386/lib/i386-linux-gnu/alsa-lib/libasound_module_${m}_pipewire.so \
+            pipewire-alsa/alsa-plugins/${m}_pipewire.c \
+            $(pkg-config --cflags --libs libpipewire-0.3 alsa) || exit 1; \
+    done && \
+    cd .. && rm -rf pipewire-${PIPEWIRE_ALSA_VERSION} pipewire-alsa.tar.gz
 
 RUN wget -O ffmpeg.tar.xz https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.xz && \
     tar -xf ffmpeg.tar.xz && \
